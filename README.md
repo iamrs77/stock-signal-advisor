@@ -69,9 +69,12 @@ The intraday backtest buys on a BUY verdict and exits on a 1.5x ATR stop, a SELL
 
 ## Project structure
 
+The analysis modules have no UI code, so the same logic runs in the app, the backtests and the background logger.
+
 | File             | What it does                                                   |
 | ---------------- | -------------------------------------------------------------- |
-| `app.py`         | The Streamlit interface and its five tabs                      |
+| `app.py`         | Page setup and the five tabs                                   |
+| `views/`         | One module per tab, plus shared display helpers, cached data loaders, theme and API keys |
 | `signals.py`     | Daily data, indicators and the long-term verdict               |
 | `intraday.py`    | Intraday data, indicators and verdicts                         |
 | `backtest.py`    | Backtests for the intraday and long-term rules                 |

@@ -1,13 +1,13 @@
 """
-narrator.py — plain-English commentary on the intraday tape.
+Plain-English commentary on the intraday session.
 
-Three pure functions (no Streamlit, so they're testable and reusable for alerts/CLI):
-  • day_summary(df)  → structured recap of TODAY: what moved, when, where it stands.
-  • day_outlook(df)  → a rules-based "setup into tomorrow" (NOT a prediction) + key levels.
-  • live_read(df, price, headline) → a few sentences on what's happening RIGHT NOW.
+Three pure functions (no Streamlit, so they can be tested and reused for alerts or a CLI):
+  - day_summary(df): recap of today (what moved, when, and where it stands).
+  - day_outlook(df): a rules-based setup into tomorrow (not a prediction) plus key levels.
+  - live_read(df, price, headline): a few sentences on what's happening right now.
 
-Every number comes straight from the bars/indicators the app already computes. The index
-is tz-aware America/New_York, so session buckets use real market wall-clock time.
+Every number comes from the bars and indicators the app already calculates. The index is
+tz-aware America/New_York, so session buckets use real market time.
 """
 
 from __future__ import annotations
@@ -137,7 +137,7 @@ def day_outlook(df: pd.DataFrame) -> dict | None:
 
 def live_read(df: pd.DataFrame, price: float | None = None, headline: str = "",
               htf_trend: str | None = None, minutes_to_close: int | None = None) -> list[tuple[str, str]]:
-    """Detailed, plain-English read of the tape RIGHT NOW, as (label, text) pairs.
+    """Detailed, plain-English read of the tape right now, as (label, text) pairs.
     Everything is quantified (distances, RSI direction, MACD histogram, ATR) so it actually
     informs a decision rather than just naming the indicator state."""
     t = _today(df)
@@ -228,7 +228,7 @@ def live_read(df: pd.DataFrame, price: float | None = None, headline: str = "",
 
 def live_metrics(df: pd.DataFrame, price: float | None = None, htf_trend: str | None = None,
                  minutes_to_close: int | None = None) -> dict | None:
-    """Raw numbers behind the live read — for the visual dashboard (gauges + level ladder)."""
+    """Raw numbers behind the live read, used by the visual dashboard (gauges and level ladder)."""
     t = _today(df)
     if t is None or len(t) < 3:
         t = df.tail(12) if df is not None else None

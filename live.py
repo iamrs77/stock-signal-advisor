@@ -1,17 +1,17 @@
 """
-live.py — market-aware real-time / extended-hours last-price quotes.
+Market-aware last-price quotes, including pre-market and after-hours.
 
-Logic, in order:
-  • Pre-market / after-hours  → Yahoo's pre/post-market price (Finnhub's free
-    tier doesn't cover extended hours, but Yahoo does).
-  • Regular session + Finnhub key → Finnhub real-time price (best intraday).
-  • Otherwise → Yahoo regular price (delayed ~15 min) or last close.
+Sources, in order:
+  - Pre-market / after-hours: Yahoo's pre/post-market price (Finnhub's free tier doesn't
+    cover extended hours, but Yahoo does).
+  - Regular session with a Finnhub key: Finnhub's real-time price.
+  - Otherwise: Yahoo's regular price (delayed about 15 minutes) or the last close.
 
-Every quote carries the market `state` (PRE/REGULAR/POST/CLOSED) and a label so
-the UI can show the right badge ("🌙 AFTER-HOURS", "🔴 LIVE", etc.).
+Every quote carries the market `state` (PRE/REGULAR/POST/CLOSED) and a label so the UI can
+show the right badge ("🌙 AFTER-HOURS", "🔴 LIVE", etc.).
 
-Kept separate from signals.py so the price feed can evolve without touching the
-indicator logic.
+Kept separate from signals.py so the price feed can change without touching the indicator
+logic.
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ def get_live_quote(ticker: str, api_key: str | None = None) -> Quote | None:
     state = info.get("marketState")
     regular = info.get("regularMarketPrice")
 
-    # 1) Pre-market / after-hours — show the extended-hours price.
+    # 1) Pre-market / after-hours: show the extended-hours price.
     if state in _EXT:
         label, pkey, pctkey = _EXT[state]
         price = info.get(pkey)
@@ -90,7 +90,7 @@ def get_live_quote(ticker: str, api_key: str | None = None) -> Quote | None:
                          state=state, regular_price=regular)
         # No extended trade yet → fall through to last close.
 
-    # 2) Regular session — prefer Finnhub real-time.
+    # 2) Regular session: prefer Finnhub's real-time price.
     if state == "REGULAR" and api_key:
         q = _finnhub_quote(ticker, api_key)
         if q:

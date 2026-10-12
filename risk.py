@@ -1,12 +1,12 @@
 """
-risk.py — money-management helpers for the intraday tab.
+Money-management helpers for the intraday tab.
 
-Two jobs, both about NOT blowing up the account:
-  1. position_size(): how many shares to buy so a stop-out loses a fixed amount.
-  2. a tiny daily trade log (JSON file) so a "max daily loss" guardrail can work
-     without any broker integration — you log each closed trade's result.
+Two jobs, both about protecting the account:
+  1. position_size(): how many shares to buy so that hitting the stop loses a fixed amount.
+  2. A small daily trade log (JSON file), so a "max daily loss" limit works without any
+     broker integration. You log the result of each closed trade.
 
-Kept UI-free so it can be reused/tested. Nothing here is financial advice.
+No UI code, so it can be reused and tested. Nothing here is financial advice.
 """
 
 from __future__ import annotations

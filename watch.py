@@ -1,22 +1,21 @@
 """
-watch.py — standalone 24/7 intraday verdict logger.
+Standalone intraday verdict logger that keeps running in the background.
 
-Runs OUTSIDE Streamlit, so it keeps logging verdict flips even when the app (or the
-Intraday tab) is closed. Every POLL_SECONDS, for each watched ticker, it computes the
-SAME live intraday verdict the app shows — real engine, real-time price during the
-regular session, same data-staleness guard — and appends any CHANGE to
-verdict_history.json. That's the same file the app's "Verdict history" panel reads, so
-captures from this logger show up there automatically.
+It runs outside Streamlit, so it keeps logging verdict flips even when the app (or its
+Intraday tab) is closed. Every POLL_SECONDS, for each watched ticker, it calculates the
+same live intraday verdict the app shows (same engine, real-time price during the regular
+session, same stale-data check) and appends any change to verdict_history.json. The app's
+"Verdict history" panel reads the same file, so entries from this logger show up there.
 
-It only logs during the US REGULAR session (decided by Yahoo's market state, so holidays
-and early closes are handled for free); outside the session it idles quietly.
+It only logs during the US regular session, using Yahoo's market state, so holidays and
+early closes are handled automatically. Outside the session it waits.
 
 Run it:
     .venv\\Scripts\\python.exe watch.py              # defaults: SOXL, 5m
     .venv\\Scripts\\python.exe watch.py SOXL TQQQ    # custom tickers
     .venv\\Scripts\\python.exe watch.py SOXL --tf 3m # custom timeframe
-…or just double-click  watch.bat .  Leave it running (minimized is fine) during the day.
-Stop it with Ctrl+C.
+or double-click watch.bat. Leave it running (minimized is fine) during the day, and stop
+it with Ctrl+C.
 """
 
 from __future__ import annotations

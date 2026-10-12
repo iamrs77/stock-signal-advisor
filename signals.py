@@ -1,14 +1,12 @@
 """
-signals.py — the analytical "brain" of the app.
+Daily price data, technical indicators and the long-term BUY / SELL / HOLD verdict.
 
-This module is deliberately UI-free: it only knows how to fetch price data,
-compute technical indicators, and turn them into an explainable BUY / SELL / HOLD
-verdict. Keeping it separate means the same logic can later power a watchlist
-scanner, a backtester, email/SMS alerts, or a CLI — without touching the UI.
+This module has no UI code. It fetches price data, calculates the indicators and turns
+them into a verdict with reasons, so the same logic can also power the watchlist scanner,
+the backtester, or future alerts and a CLI.
 
-Indicators are computed by hand with pandas (no fragile third-party TA library),
-so they keep working across numpy/pandas versions and you can see exactly how
-each number is produced.
+The indicators are calculated directly with pandas instead of a third-party TA library,
+so they keep working across numpy/pandas versions and every number is easy to trace.
 """
 
 from __future__ import annotations
@@ -132,7 +130,7 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
     def add(name, direction, weight, detail):
         signals.append(Signal(name, direction, weight, detail))
 
-    # 0) Trend regime — price vs the 200-day average. THE driver of the verdict:
+    # 0) Trend regime: price vs the 200-day average. This is what drives the verdict:
     #    invested above the 200-day, step aside below it (validated to ~halve drawdowns).
     sma200 = latest["SMA200"]
     if not np.isnan(sma200):
@@ -145,7 +143,7 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
                 f"Price ({_fmt(price)}) is BELOW the 200-day average ({_fmt(sma200)}) — "
                 "long-term downtrend; step aside to cash.")
 
-    # 1) Primary trend — 50-day vs 200-day moving average (heaviest weight).
+    # 1) Primary trend: 50-day vs 200-day moving average (heaviest weight).
     if not np.isnan(latest["SMA200"]):
         if latest["SMA50"] > latest["SMA200"]:
             add("Long-term trend", "bullish", 2,
@@ -159,7 +157,7 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
         add("Long-term trend", "neutral", 0,
             "Not enough history (need ~200 days) to judge the long-term trend.")
 
-    # 2) Price vs the 50-day average — medium-term momentum.
+    # 2) Price vs the 50-day average: medium-term momentum.
     if not np.isnan(latest["SMA50"]):
         if price > latest["SMA50"]:
             add("Price vs 50-day avg", "bullish", 1,
@@ -168,7 +166,7 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
             add("Price vs 50-day avg", "bearish", 1,
                 f"Price ({_fmt(price)}) is below its 50-day average — sellers in control.")
 
-    # 3) RSI — overbought / oversold.
+    # 3) RSI: overbought / oversold.
     rsi_val = latest["RSI"]
     if not np.isnan(rsi_val):
         if rsi_val < 30:
@@ -181,7 +179,7 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
             add("RSI (momentum)", "neutral", 0,
                 f"RSI is {rsi_val:.0f} — neutral zone (30–70), no extreme.")
 
-    # 4) MACD — trend momentum and fresh crossovers.
+    # 4) MACD: trend momentum and fresh crossovers.
     macd_val, sig_val = latest["MACD"], latest["MACD_SIGNAL"]
     if not np.isnan(macd_val) and not np.isnan(sig_val):
         # Detect a crossover within the last 3 bars (a fresh signal carries more weight).
@@ -201,7 +199,7 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
         else:
             add("MACD", "bearish", 1, "MACD is below its signal line — downward momentum.")
 
-    # 5) Bollinger Bands — stretched away from the mean.
+    # 5) Bollinger Bands: stretched away from the mean.
     bb_up, bb_lo = latest["BB_UPPER"], latest["BB_LOWER"]
     if not np.isnan(bb_up) and not np.isnan(bb_lo):
         if price < bb_lo:
@@ -223,9 +221,9 @@ def evaluate(df: pd.DataFrame, ticker: str, currency: str = "") -> Analysis:
 
     # The verdict is driven by the 200-day trend regime (validated as far better than
     # pure scoring): invested above the 200-day, cash below. The other indicators are
-    # context — they set how STRONG the call is, not its direction.
+    # context: they set how strong the call is, not its direction.
     if np.isnan(sma200):
-        # Not enough history for a regime read — fall back to the weighted score.
+        # Not enough history for a regime read, so fall back to the weighted score.
         verdict = "BUY" if score >= 2 else "SELL" if score <= -2 else "HOLD"
     elif price > sma200:
         verdict = "BUY"

@@ -1,17 +1,17 @@
 """
-backtest.py — does the intraday BUY/SELL logic actually make money on SOXL?
+Backtests for the intraday and long-term rules: do the BUY/SELL verdicts make money?
 
-It replays history bar-by-bar using the SAME engine the live tab uses
-(intraday.evaluate_intraday), so the test reflects the real rules — not a copy
-that could drift. Long-only, one position at a time:
+The intraday backtest replays history bar by bar through the same engine the live tab
+uses (intraday.evaluate_intraday), so it tests the real rules instead of a copy that
+could drift. Long-only, one position at a time:
 
-  • ENTER on a BUY verdict, at that bar's close.
-  • EXIT on whichever comes first: a 1.5×ATR stop, a SELL verdict, or end of day
-    (no overnight holds — this is an intraday strategy).
+  - Enter on a BUY verdict, at that bar's close.
+  - Exit on whichever comes first: a 1.5x ATR stop, a SELL verdict, or the end of the
+    day (no overnight holds, since this is an intraday strategy).
 
-Honest caveats (shown in the UI too): no fees/slippage, assumes clean fills, runs
-on Yahoo bars (which can lag), and PAST PERFORMANCE IS NOT FUTURE PERFORMANCE.
-It's a sanity check on the rules, not a promise.
+Caveats (also shown in the UI): no fees or slippage, assumes clean fills, uses Yahoo bars
+(which can lag), and past results don't predict future ones. It's a sanity check on the
+rules, not a promise.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def run_backtest(ticker: str, interval: str = "5m", stop_atr: float = 1.5, use_h
     low = df["Low"].to_numpy()
     atr = df["ATR"].to_numpy()
 
-    # Verdict at each bar, from the real engine — fed a tiny trailing window so it's O(n)
+    # Verdict at each bar from the real engine, fed a small trailing window so it's O(n)
     # (evaluate only looks at the last row + last 4 bars, so a 5-row window is identical).
     verdicts: list[str | None] = [None] * n
     for i in range(n):
@@ -78,12 +78,12 @@ def run_backtest(ticker: str, interval: str = "5m", stop_atr: float = 1.5, use_h
 
 
 def run_backtest_lt(ticker: str, period: str = "5y") -> dict:
-    """Backtest the LONG-TERM (daily) engine in signals.py — the same one the Long-term
+    """Backtest the long-term (daily) engine in signals.py, the same one the Long-term
     tab and the Watchlist use. It's a trend-regime strategy: go long when price is above
     its 200-day average (a BUY verdict), step aside when it drops below (a SELL verdict).
     Long-only, held across days; the 200-day line itself is the exit. Reuses the real
     `signals.evaluate` on a trailing window so it tests the actual rules. 'Risk' (for the
-    R multiple) is the distance from the entry price down to the 200-day at entry — i.e.
+    R multiple) is the distance from the entry price down to the 200-day at entry, i.e.
     how far price would have to fall to trigger the trend exit."""
     df = signals.get_data(ticker, period=period)
     n = len(df)

@@ -1,12 +1,12 @@
 """
-app.py — the Stock Signal Advisor dashboard.
+Stock Signal Advisor dashboard (Streamlit).
 
-Run it with:   run.bat        (just double-click it)
+Run it with:   run.bat        (double-click it)
 or:            .venv\\Scripts\\python.exe -m streamlit run app.py
 
-What it does: you type a ticker, it pulls real price data, computes well-known
-technical indicators, and gives a clear, EXPLAINED BUY / SELL / HOLD verdict —
-for both intraday and long-term timeframes. Not a prediction, not financial advice.
+Type a ticker and the app pulls real price data, calculates common technical indicators
+and gives a BUY / SELL / HOLD verdict with the reasons behind it, for both intraday and
+long-term timeframes. Not a prediction, and not financial advice.
 """
 
 import contextlib
@@ -265,9 +265,9 @@ button[kind="primary"]:hover, [data-testid="stBaseButton-primary"]:hover {
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
-# How fast the intraday VERDICT auto-refreshes (seconds). Kept short on purpose —
+# How often the intraday verdict refreshes (seconds). Kept short on purpose, because
 # intraday is time-sensitive. The heavier chart refreshes on a slower cycle (see below).
-# Auto-refresh interval (seconds). NOTE: pass run_every to @st.fragment as a STRING ("10s") —
+# Auto-refresh interval (seconds). Note: pass run_every to @st.fragment as a string ("10s");
 # a bare int silently fails to auto-rerun in this Streamlit version (the string "30s" works).
 INTRADAY_REFRESH = 10
 
@@ -483,7 +483,7 @@ def _live_badge(q) -> str:
 
 @st.fragment(run_every="15s")
 def live_price_ticker(ticker: str, api_key: str | None):
-    """Auto-refreshing last price (every 15s) — shows pre/after-hours too."""
+    """Last price, refreshed every 15s. Also shows pre-market and after-hours prices."""
     q = live.get_live_quote(ticker, api_key)
     if not q or q.price is None:
         st.caption("⚠️ Live price unavailable right now.")
@@ -561,8 +561,8 @@ def watchlist_view(tickers: list[str], period: str):
 # --------------------------------------------------------------------------- #
 @st.cache_data(ttl=8, show_spinner=False)
 def cached_intraday(ticker: str, interval: str):
-    """Very short 8s cache (< the refresh interval) so every refresh pulls FRESH bars —
-    the old 60s cache was the main reason the verdict lagged the live price. Uses Alpaca's
+    """Very short 8s cache (shorter than the refresh interval) so every refresh pulls fresh bars.
+    The old 60s cache was the main reason the verdict lagged the live price. Uses Alpaca's
     real-time IEX feed when keys are set (falls back to Yahoo otherwise)."""
     alpaca = (ALPACA_KEY, ALPACA_SECRET) if (ALPACA_KEY and ALPACA_SECRET) else None
     return intraday.fetch_intraday(ticker, interval, alpaca=alpaca)
@@ -586,7 +586,7 @@ def cached_backtest(ticker: str, interval: str, use_htf: bool = True):
 
 
 def render_intraday_backtest(itk):
-    """Rarely-used validation tool — lives at the very bottom of the intraday tab."""
+    """Rarely used validation tool, placed at the very bottom of the intraday tab."""
     with st.expander("🧪  Backtest these signals", expanded=st.session_state.get("bt_done", False)):
         st.caption("How would the BUY/SELL rules have performed on past data? The real trust check.")
         tcol, rcol = st.columns([2, 1], vertical_alignment="bottom")
@@ -625,8 +625,8 @@ def cached_backtest_lt(ticker: str, period: str):
 
 @st.cache_data(ttl=21600, show_spinner=False)
 def cached_behavior_stats(ticker: str):
-    """Measured risk *character* of a ticker (slow-moving, so cache 6h): where the move
-    and the risk actually live — overnight vs intraday split, 'straight-line' days, and
+    """Measured risk profile of a ticker (changes slowly, so cached for 6h). Shows where the move
+    and the risk happen: overnight vs intraday split, 'straight-line' days, and
     decay risk. Daily only (~3y from Yahoo); the fine-grained intraday/15-min profile lives
     in cached_microstructure. Plain floats (cache-friendly) or None if too little history."""
     import numpy as np
@@ -688,7 +688,7 @@ def cached_behavior_stats(ticker: str):
 
 
 def _hm(tod: str) -> str:
-    """'09:30' -> '9:30', '15:45' -> '3:45' (12-hour, no ampm — axis labels)."""
+    """'09:30' -> '9:30', '15:45' -> '3:45' (12-hour without am/pm, for axis labels)."""
     hh, mm = tod.split(":")
     return f"{int(hh) % 12 or 12}:{mm}"
 
@@ -723,7 +723,7 @@ def _legend(items) -> str:
 
 @st.cache_data(ttl=21600, show_spinner=False)
 def cached_microstructure(ticker: str):
-    """Advanced intraday profile from 15-MINUTE bars over ~1 year (Alpaca IEX, paginated;
+    """Advanced intraday profile from 15-minute bars over ~1 year (Alpaca IEX, paginated;
     falls back to Yahoo's trailing ~60 days). 26 buckets/session → fine-grained volatility
     curve, liquidity profile, best-time-to-enter, opening-range break and an intraday
     momentum-vs-mean-reversion read. Plain floats/lists (cache-friendly) or None."""
@@ -831,10 +831,10 @@ def cached_microstructure(ticker: str):
 
 
 def render_behavior_panel(ticker: str, wrap: bool = True):
-    """'Know your ticker' — an advanced, measured RISK profile (not a prediction): the daily
-    character (volatility, overnight split, decay) plus a 15-minute intraday microstructure
-    read over ~1 year — volatility curve, liquidity, best-time-to-enter, opening-range break
-    and an intraday momentum-vs-mean-reversion read.
+    """'Know your ticker': a measured risk profile (not a prediction). Covers the daily
+    character (volatility, overnight split, decay) plus the intraday microstructure from
+    15-minute bars over about a year: volatility curve, liquidity, best time to enter,
+    opening-range breaks, and whether the ticker tends to trend or mean-revert intraday.
 
     wrap=True nests it in an expander (inline use); wrap=False renders it bare for the
     dedicated 🔬 Know your ticker tab, which brings its own search box."""
@@ -1187,8 +1187,8 @@ def render_verdict_history(ticker: str):
 
 @st.fragment(run_every=f"{INTRADAY_REFRESH}s")
 def intraday_panel(ticker: str, api_key: str | None):
-    """The FAST half of the intraday view — verdict, signals and the trade plan — refreshing
-    every INTRADAY_REFRESH seconds with FRESH bars + live price, so it tracks the market in
+    """The fast-refreshing half of the intraday view (verdict, signals and trade plan). It updates
+    every INTRADAY_REFRESH seconds with fresh bars and the live price, so it tracks the market in
     near-real-time. The (heavier) chart + history live in intraday_chart_panel on a slower
     cycle, so speeding this up doesn't reload the chart every few seconds. The timeframe
     toolbar sits between them (in the page body) so changing it recomputes both at once."""
@@ -1201,9 +1201,9 @@ def intraday_panel(ticker: str, api_key: str | None):
     components.html(INTRADAY_STATUS_HTML.replace("__N__", str(tick)).replace("__SECS__", str(INTRADAY_REFRESH)), height=46)
 
     lq = cached_quote(ticker, api_key)
-    # Use the live price in the verdict ONLY during the regular session. Outside it (pre/post/closed),
-    # an extended-hours price would be compared against indicators frozen at the regular close — which
-    # is misleading. So we fall back to the last regular-session close: price and indicators stay consistent.
+    # Use the live price in the verdict only during the regular session. Outside it (pre/post/closed),
+    # an extended-hours price would be compared against indicators frozen at the regular close, which
+    # is misleading. So we fall back to the last regular-session close and keep price and indicators consistent.
     in_session = bool(lq) and lq.state == "REGULAR"
     live_price = lq.price if in_session else None
     try:
@@ -1387,7 +1387,7 @@ def intraday_panel(ticker: str, api_key: str | None):
 
 @st.fragment(run_every="30s")
 def intraday_chart_panel(ticker: str):
-    """The chart only — on a slower 30s cycle so the snappy verdict above doesn't reload
+    """The chart only, on a slower 30s cycle so the fast verdict above doesn't reload
     the (heavier) TradingView iframe every few seconds. Reuses the cached bars, so it's cheap."""
     interval = st.session_state.get("intraday_interval", "5m")
     try:
@@ -1453,7 +1453,7 @@ def render_live_dashboard(m: dict | None):
         return
     tiles = []
 
-    # vs VWAP — centered gauge; marker = how far price is from VWAP (±2% spans the bar).
+    # vs VWAP: centered gauge, where the marker shows how far price is from VWAP (±2% spans the bar).
     if m["vwap"] is not None:
         vd = m["vwap_dist_pct"]
         col = "#16A34A" if vd >= 0 else "#DC2626"
@@ -1465,7 +1465,7 @@ def render_live_dashboard(m: dict | None):
             f'<div class="lm-sub">{"Above" if vd >= 0 else "Below"} ${m["vwap"]:,.2f} — '
             f'{"buyers" if vd >= 0 else "sellers"} in control</div></div>')
 
-    # Momentum — RSI gauge 0-100 with oversold/overbought ticks at 30 & 70.
+    # Momentum: RSI gauge 0-100 with oversold/overbought ticks at 30 and 70.
     if m["rsi"] is not None:
         rsi = m["rsi"]
         word = "overbought" if rsi > 70 else "oversold" if rsi < 30 else "neutral"
@@ -1477,7 +1477,7 @@ def render_live_dashboard(m: dict | None):
             f'<div class="lm-val">{rsi:.0f}<small>{m["rsi_dir"]}</small></div>{bar}'
             f'<div class="lm-sub">{word}; MACD {"↑" if m["macd_above"] else "↓"} {m["macd_mom"]}</div></div>')
 
-    # Volatility — ATR% fill bar (0–1.5% scale), colored by current pace.
+    # Volatility: ATR% fill bar (0-1.5% scale), colored by current pace.
     if m["atr_pct"] is not None:
         ap = m["atr_pct"]
         pace = m["pace"] or "normal"
@@ -1490,7 +1490,7 @@ def render_live_dashboard(m: dict | None):
             f'<div class="lm-val">{ap:.2f}%<small>per bar</small></div>{bar}'
             f'<div class="lm-sub">{pace} pace{ratio}</div></div>')
 
-    # Day range — where price sits within today's high–low.
+    # Day range: where price sits between today's high and low.
     pos = m["pos_in_range"]
     where = "near highs" if pos > 0.7 else "near lows" if pos < 0.3 else "mid-range"
     chgcol = "#16A34A" if m["chg_pct"] >= 0 else "#DC2626"
@@ -1573,7 +1573,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Keys are read from .streamlit/secrets.toml — set them there manually, not via the UI.
+# Keys are read from .streamlit/secrets.toml. Set them there by hand, not through the UI.
 try:
     API_KEY = st.secrets.get("FINNHUB_API_KEY", "")          # Finnhub: real-time price
     ALPACA_KEY = st.secrets.get("ALPACA_API_KEY", "")        # Alpaca: real-time intraday bars
@@ -1645,7 +1645,7 @@ with tab_intraday:
             st.segmented_control("Timeframe", ["1m", "3m", "5m", "15m"],
                                  key="intraday_interval", label_visibility="collapsed")
         intraday_chart_panel(itk)                 # chart at the bottom (slower 30s, no flicker)
-        render_intraday_backtest(itk)             # rarely-used validation tool — tucked at the very bottom
+        render_intraday_backtest(itk)             # rarely used validation tool, kept at the very bottom
 
 with tab_analyze:
     st.caption("Swing / long-term view — daily bars. The verdict follows the **200-day trend regime** "

@@ -1,12 +1,12 @@
 """
-alpaca_data.py — real-time intraday bars from Alpaca's FREE IEX feed.
+Real-time intraday bars from Alpaca's free IEX feed.
 
-Yahoo's intraday bars can lag ~15 min; Alpaca's IEX feed is real-time, so the live
-indicators (VWAP/EMA/RSI/MACD) finally match the live price. Plain REST via `requests`
-(no SDK). Free with any Alpaca account (a paper account is fine).
+Yahoo's intraday bars can lag by about 15 minutes. Alpaca's IEX feed is real-time, so the
+live indicators (VWAP, EMA, RSI, MACD) match the live price. Uses the REST API directly
+through `requests` (no SDK) and works with any Alpaca account, including a paper account.
 
-Caveat: the free feed is IEX-only volume (a subset of the whole market), so VWAP is a
-bit less complete than full-market data — but it's real-time, which is the point.
+Caveat: the free feed only includes IEX volume, a subset of the whole market, so VWAP is
+slightly less complete than full-market data. In exchange, it's real-time.
 Returns a regular-session OHLCV frame (ET index) or None; callers fall back to Yahoo.
 """
 
@@ -41,7 +41,7 @@ def fetch_bars(ticker: str, interval: str, api_key: str, secret_key: str, days: 
 
 def fetch_bars_history(ticker: str, interval: str, api_key: str, secret_key: str,
                        days: int = 365, feed: str = "iex") -> pd.DataFrame | None:
-    """Paginated historical bars — follows Alpaca's `next_page_token`, so a FULL year of
+    """Paginated historical bars. Follows Alpaca's `next_page_token`, so a full year of
     intraday data comes back instead of just the first 10k-bar page (the limitation that
     made the plain `fetch_bars` return ~1 month for a year-long 15m request). Split-adjusted,
     regular-session ET frame, or None. Powers the 'Know your ticker' microstructure profile."""

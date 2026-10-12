@@ -1,11 +1,11 @@
 """
-history.py — a lightweight, persistent log of intraday verdict CHANGES.
+A small, persistent log of intraday verdict changes.
 
-Every time the live intraday verdict flips (e.g. HOLD → BUY), we stamp it with the
-time and price and append it to verdict_history.json. We record CHANGES only (not
-every 30-second refresh), keep the last 60 days, and key changes by (ticker,
-timeframe) so switching timeframes doesn't manufacture phantom flips. UI-free,
-like signals.py — so the same log can later feed alerts or a CLI.
+Every time the live intraday verdict flips (for example HOLD to BUY), the time and price
+are appended to verdict_history.json. Only changes are recorded, not every 30-second
+refresh. Entries older than 60 days are dropped, and changes are keyed by (ticker,
+timeframe) so switching timeframes doesn't create false flips. Like signals.py it has no
+UI code, so the same log could later feed alerts or a CLI.
 """
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ def _load() -> list[dict]:
 
 
 def _save(rows: list[dict]) -> None:
-    # Write atomically (temp file + os.replace) so a reader — or the other writer, since both
-    # the app and watch.py can log — never sees a half-written file. os.replace is atomic on Windows.
+    # Write atomically (temp file + os.replace) so a reader, or the other writer (both the app
+    # and watch.py can log), never sees a half-written file. os.replace is atomic on Windows.
     try:
         tmp = _FILE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -48,15 +48,15 @@ def _parse(ts: str) -> dt.datetime:
 
 def record_verdict(ticker: str, interval: str, verdict: str, price: float | None,
                    bar_high: float | None = None, bar_low: float | None = None) -> bool:
-    """Log verdict flips AND track the high/low reached AFTER each verdict.
+    """Log verdict flips and track the high/low reached after each verdict.
 
     Called on every refresh (from the app, and from the standalone watch.py logger):
-      • If the verdict CHANGED → append a new row (time, verdict, price, hi, lo) and return True.
-      • If the verdict is UNCHANGED → just extend the current row's running high/low with the
+      - If the verdict changed, append a new row (time, verdict, price, hi, lo) and return True.
+      - If it's unchanged, extend the current row's running high/low with the
         latest price/bar so we capture how far it ran before the next flip, and return False.
 
-    So once a new verdict fires, the previous row is frozen with the full range that occurred
-    during its life — letting you see whether a BUY actually went up (and how far it dipped).
+    Once a new verdict fires, the previous row keeps the full range that occurred
+    during its life, so you can see whether a BUY actually went up (and how far it dipped).
     Prunes to 60 days. `hi`/`lo` are None on rows logged before this feature existed.
     """
     ticker = (ticker or "").upper()

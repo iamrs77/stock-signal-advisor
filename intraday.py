@@ -1,20 +1,20 @@
 """
-intraday.py — fast intraday signals, tuned for volatile names like SOXL.
+Fast intraday signals, tuned for volatile tickers like SOXL.
 
-This is the short-timeframe counterpart to signals.py. Where signals.py judges
-the long-term picture (50/200-day averages), this judges the *here and now* on
-minute bars using the indicators day traders actually watch:
+The short-timeframe counterpart to signals.py. signals.py judges the long-term picture
+(50/200-day averages); this module judges the current session on minute bars, using the
+indicators day traders watch:
 
-  • VWAP        — the session's volume-weighted average price (THE intraday anchor)
-  • EMA 9 / 21  — fast trend & crossovers
-  • RSI / MACD  — momentum on intraday bars
-  • ATR         — volatility → automatic stop-loss & profit targets (risk first!)
+  - VWAP: the session's volume-weighted average price, the main intraday reference
+  - EMA 9 / 21: fast trend and crossovers
+  - RSI / MACD: momentum on intraday bars
+  - ATR: volatility, used for automatic stop-loss and profit targets
 
-The "price vs VWAP / EMA" checks accept a real-time price (from live.py / Finnhub)
-so they react instantly even when the bars themselves are slightly delayed.
+The "price vs VWAP / EMA" checks accept a real-time price (from live.py / Finnhub), so
+they react straight away even when the bars are slightly delayed.
 
-NOTHING here is financial advice. Intraday trading a 3x leveraged ETF is very
-high risk; the suggested stop/target levels are illustrative risk math, not calls.
+Nothing here is financial advice. Day trading a 3x leveraged ETF is very high risk, and
+the suggested stop and target levels are illustrative risk math, not trade calls.
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ def _atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 
 
 def _session_vwap(df: pd.DataFrame) -> pd.Series:
-    """Running VWAP anchored per trading day (resets each session). Computed for EVERY
+    """Running VWAP anchored per trading day (resets each session). Computed for every
     day in the frame so backtests get a valid VWAP too."""
     tp = (df["High"] + df["Low"] + df["Close"]) / 3
     vol = df["Volume"]
@@ -109,7 +109,7 @@ def _add_indicators(df: pd.DataFrame) -> pd.DataFrame:
 def fetch_intraday(ticker: str, interval: str = "5m", period: str | None = None,
                    alpaca: tuple | None = None) -> pd.DataFrame:
     """Intraday bars + indicators. Uses Alpaca's real-time IEX feed when `alpaca`
-    (key, secret) is supplied; otherwise — and on any Alpaca failure — falls back to Yahoo."""
+    (key, secret) is supplied. Otherwise, or if Alpaca fails, falls back to Yahoo."""
     ticker = ticker.strip().upper()
     raw = None
     if alpaca and alpaca[0] and alpaca[1]:
@@ -203,7 +203,7 @@ def evaluate_intraday(df: pd.DataFrame, ticker: str, interval: str, live_price: 
     def add(name, direction, weight, detail):
         signals.append(Signal(name, direction, weight, detail))
 
-    # 1) Price vs VWAP — the core intraday bias (heaviest weight).
+    # 1) Price vs VWAP: the core intraday bias (heaviest weight).
     vwap = last["VWAP"]
     if _nz(vwap):
         if price > vwap:
@@ -213,7 +213,7 @@ def evaluate_intraday(df: pd.DataFrame, ticker: str, interval: str, live_price: 
             add("Price vs VWAP", "bearish", 2,
                 f"Price {price:,.2f} is BELOW VWAP {vwap:,.2f} — sellers control the session.")
 
-    # 2) EMA 9 vs EMA 21 — fast trend & crossovers.
+    # 2) EMA 9 vs EMA 21: fast trend and crossovers.
     e9, e21 = last["EMA9"], last["EMA21"]
     if _nz(e9) and _nz(e21):
         recent = df.tail(4)
@@ -228,14 +228,14 @@ def evaluate_intraday(df: pd.DataFrame, ticker: str, interval: str, live_price: 
         else:
             add("EMA 9/21", "bearish", 1, "EMA 9 below EMA 21 — short-term downtrend intact.")
 
-    # 3) Price vs EMA 9 — immediate momentum.
+    # 3) Price vs EMA 9: immediate momentum.
     if _nz(e9):
         if price > e9:
             add("Price vs EMA 9", "bullish", 1, f"Price is above the 9-EMA ({e9:,.2f}) — pushing up.")
         else:
             add("Price vs EMA 9", "bearish", 1, f"Price is below the 9-EMA ({e9:,.2f}) — pulling back.")
 
-    # 4) MACD — momentum & fresh crossovers.
+    # 4) MACD: momentum and fresh crossovers.
     m, sg = last["MACD"], last["MACD_SIGNAL"]
     if _nz(m) and _nz(sg):
         recent = df.tail(4)
@@ -250,7 +250,7 @@ def evaluate_intraday(df: pd.DataFrame, ticker: str, interval: str, live_price: 
         else:
             add("MACD", "bearish", 1, "MACD below its signal line.")
 
-    # 5) RSI — intraday overbought / oversold.
+    # 5) RSI: intraday overbought / oversold.
     r = last["RSI"]
     if _nz(r):
         if r < 30:
@@ -266,7 +266,7 @@ def evaluate_intraday(df: pd.DataFrame, ticker: str, interval: str, live_price: 
                 for s in signals)
     max_score = sum(s.weight for s in signals if s.direction != "neutral") or 1
     # Agreement = net score vs participating weight, but floored at 5 (the weight of the four
-    # core signals) so a sparse read — e.g. only 1-2 signals available at the open — can't show
+    # core signals) so a sparse read, e.g. only 1-2 signals available at the open, can't show
     # a misleading 100%.
     confidence = int(round(min(abs(score) / max(max_score, 5), 1.0) * 100))
     a = last["ATR"] if _nz(last["ATR"]) else None
@@ -313,7 +313,7 @@ def evaluate_intraday(df: pd.DataFrame, ticker: str, interval: str, live_price: 
         add("Higher-timeframe trend", "bullish", 0,
             "Daily trend is UP — this long is aligned with the bigger trend.")
 
-    # ---- ATR-based LONG levels (user trades long-only: stop below, profit targets above) ----
+    # ---- ATR-based long levels (user trades long-only: stop below, profit targets above) ----
     stop = t1 = t2 = None
     if a:
         stop, t1, t2 = price - 1.5 * a, price + 1.5 * a, price + 3 * a

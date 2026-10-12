@@ -1,10 +1,12 @@
-# Project Streamlit settings — keeps launches quiet and consistent.
+# Project Streamlit settings, so every launch looks and behaves the same.
 [browser]
 gatherUsageStats = false
 
+# server.headless is left at Streamlit's default: it opens a browser tab on Windows and macOS,
+# and runs headless on Linux servers such as Streamlit Community Cloud. Setting it to false here
+# makes Streamlit wait for an onboarding prompt on the server, so the app never starts there.
 [server]
 port = 8501
-headless = false   # open the browser automatically on launch
 
 [theme]
 base = "light"

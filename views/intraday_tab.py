@@ -10,7 +10,7 @@ import live
 import narrator
 import risk
 
-from views.api_keys import ALPACA_KEY, ALPACA_SECRET, API_KEY
+from views.api_keys import ALPACA_KEY, ALPACA_SECRET, API_KEY, DEMO_MODE
 from views.data import cached_backtest, cached_daily_trend, cached_intraday, cached_quote
 from views.shared import clamp, dtip, live_badge, lw_chart, render_backtest, render_signals, section, verdict_card
 from views.theme import C_BLUE, C_GOLD, C_PURPLE, LADDER_ICON
@@ -58,6 +58,11 @@ VERDICT_KEY_HTML = """
   <div class="vrow"><span class="badge b-ssell">Strong SELL</span><span class="desc">All signals aligned bearish (score ≤ −5) — strong exit / stay-out signal.</span></div>
 </div>
 """
+
+
+def trade_store():
+    """Where the daily trade log lives: this visitor's session on the public demo, else daily_risk.json."""
+    return st.session_state if DEMO_MODE else None
 
 
 def render_intraday_backtest(itk):
@@ -262,7 +267,7 @@ def intraday_panel(ticker: str, api_key: str | None):
 
             # --- daily loss guardrail ---
             _mx = st.session_state.get("max_daily_loss")
-            _realized = sum(risk.load_today()["trades"])
+            _realized = sum(risk.load_today(trade_store())["trades"])
             limit_hit = bool(_mx) and _mx > 0 and _realized <= -_mx
             if limit_hit:
                 st.error(f"🛑 Daily loss limit hit ({_realized:+,.0f}). No new trades today — protect your capital.")
@@ -563,7 +568,7 @@ def render():
                          help="When your logged losses for the day reach this, the app tells you to stop.")
 
         st.divider()
-        day = risk.load_today()
+        day = risk.load_today(trade_store())
         realized = sum(day["trades"])
         ntr = len(day["trades"])
         mx = st.session_state.get("max_daily_loss")
@@ -583,12 +588,12 @@ def render():
                                   placeholder="+120 or -75", key="log_pnl", label_visibility="collapsed")
         if lc2.button("Add trade", key="log_add"):
             if pnl_in is not None:
-                risk.record_trade(pnl_in)
+                risk.record_trade(pnl_in, trade_store())
                 st.session_state.pop("log_pnl", None)
                 st.session_state["risk_exp"] = True
                 st.rerun()
         if lc3.button("Reset day", key="log_reset"):
-            risk.reset_today()
+            risk.reset_today(trade_store())
             st.session_state["risk_exp"] = True
             st.rerun()
 

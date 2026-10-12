@@ -71,3 +71,18 @@ def test_a_missing_or_corrupt_log_is_treated_as_empty(trade_log):
     assert risk.load_today()["trades"] == []
     trade_log.write_text("not json")
     assert risk.load_today()["trades"] == []
+
+
+def test_a_store_keeps_the_log_out_of_the_file(trade_log):
+    store = {}  # the public demo passes each visitor's session state here
+    risk.record_trade(-25, store)
+    assert risk.load_today(store)["trades"] == [-25.0]
+    assert not trade_log.exists()
+    assert risk.load_today()["trades"] == []
+    assert risk.reset_today(store)["trades"] == []
+
+
+def test_two_visitors_never_see_each_others_trades(trade_log):
+    first_visitor, second_visitor = {}, {}
+    risk.record_trade(-500, first_visitor)
+    assert risk.load_today(second_visitor)["trades"] == []

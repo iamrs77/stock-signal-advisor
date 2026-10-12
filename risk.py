@@ -3,8 +3,9 @@ Money-management helpers for the intraday tab.
 
 Two jobs, both about protecting the account:
   1. position_size(): how many shares to buy so that hitting the stop loses a fixed amount.
-  2. A small daily trade log (JSON file), so a "max daily loss" limit works without any
-     broker integration. You log the result of each closed trade.
+  2. A small daily trade log, so a "max daily loss" limit works without any broker
+     integration. You log the result of each closed trade. It's saved to a JSON file, or to
+     a dict you pass as `store` (the public demo passes each visitor's session state).
 
 No UI code, so it can be reused and tested. Nothing here is financial advice.
 """
@@ -55,7 +56,13 @@ def _today() -> str:
     return datetime.date.today().isoformat()
 
 
-def _save(data: dict) -> None:
+_STORE_KEY = "daily_risk"
+
+
+def _save(data: dict, store: dict | None = None) -> None:
+    if store is not None:
+        store[_STORE_KEY] = data
+        return
     try:
         with open(_LOG, "w") as f:
             json.dump(data, f)
@@ -63,11 +70,14 @@ def _save(data: dict) -> None:
         pass
 
 
-def load_today() -> dict:
+def load_today(store: dict | None = None) -> dict:
     """Return today's log {date, trades:[pnl,...]}. Auto-resets on a new day."""
     try:
-        with open(_LOG) as f:
-            data = json.load(f)
+        if store is not None:
+            data = store[_STORE_KEY]
+        else:
+            with open(_LOG) as f:
+                data = json.load(f)
         if data.get("date") == _today():
             return data
     except Exception:
@@ -75,14 +85,14 @@ def load_today() -> dict:
     return {"date": _today(), "trades": []}
 
 
-def record_trade(pnl: float) -> dict:
-    data = load_today()
+def record_trade(pnl: float, store: dict | None = None) -> dict:
+    data = load_today(store)
     data["trades"].append(round(float(pnl), 2))
-    _save(data)
+    _save(data, store)
     return data
 
 
-def reset_today() -> dict:
+def reset_today(store: dict | None = None) -> dict:
     data = {"date": _today(), "trades": []}
-    _save(data)
+    _save(data, store)
     return data

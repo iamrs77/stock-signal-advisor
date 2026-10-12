@@ -62,6 +62,17 @@ python watch.py SOXL TQQQ --tf 3m # two tickers on 3-minute bars
 
 On Windows, `watch.bat` does the same.
 
+## Deploying for free
+
+The app runs on [Streamlit Community Cloud](https://streamlit.io/cloud) at no cost:
+
+1. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub and choose **Create app**, then **Deploy a public app from GitHub**.
+2. Pick this repository, branch `main` and main file `app.py`.
+3. Under **Advanced settings**, choose Python 3.12 and paste your secrets in the same format as `secrets.toml`, including `DEMO_MODE = true`.
+4. Click **Deploy**.
+
+Everyone who opens a public deployment shares one server. With `DEMO_MODE` on, each visitor's trade log stays in their own browser session instead of a shared file. API keys stay on the server and are never sent to the browser.
+
 ## How the verdicts work
 
 Each indicator adds or subtracts points, and the total decides the verdict.

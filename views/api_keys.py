@@ -1,4 +1,4 @@
-"""API keys, read from .streamlit/secrets.toml. Empty strings when a key isn't set."""
+"""API keys and settings, read from .streamlit/secrets.toml. Keys are empty strings when not set."""
 
 import streamlit as st
 
@@ -10,3 +10,10 @@ try:
     ALPACA_SECRET = st.secrets.get("ALPACA_SECRET_KEY", "")
 except Exception:
     API_KEY = ALPACA_KEY = ALPACA_SECRET = ""
+
+# Public demo: everyone shares one server, so each visitor's trade log is kept in their own
+# browser session instead of the shared daily_risk.json file.
+try:
+    DEMO_MODE = bool(st.secrets.get("DEMO_MODE", False))
+except Exception:
+    DEMO_MODE = False

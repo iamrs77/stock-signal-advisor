@@ -1,8 +1,12 @@
 # Stock Signal Advisor
 
+[![Tests](https://github.com/iamrs77/stock-signal-advisor/actions/workflows/tests.yml/badge.svg)](https://github.com/iamrs77/stock-signal-advisor/actions/workflows/tests.yml)
+
 A Streamlit app that gives a BUY, SELL or HOLD verdict for a stock and explains the reasons behind it. It has an intraday view for day trading and a long-term view based on daily prices, uses real-time market data where it's available, and can backtest its own rules.
 
 **Not financial advice.** The verdicts come from fixed rules. They're a second opinion, not a prediction.
+
+![Intraday tab with a SELL verdict for SOXL](docs/screenshots/intraday.png)
 
 ## Features
 
@@ -12,6 +16,14 @@ A Streamlit app that gives a BUY, SELL or HOLD verdict for a stock and explains 
 - **Watchlist.** Scans several tickers at once and sorts them by signal.
 - **Know your ticker.** A ticker's risk profile from 3 years of daily data and 15-minute bars (about a year with an Alpaca key, about 60 days without): how much of the move happens overnight versus during the day, volatility by time of day, and opening-range breaks.
 - **Live prices.** Picks the best free source for the current session: Finnhub during regular hours, Yahoo before and after the market, and Alpaca's IEX feed for real-time intraday bars.
+
+| Long-term chart                                         | Backtest results                                      |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| ![Long-term price chart with moving averages, RSI and MACD](docs/screenshots/long-term.png) | ![Long-term backtest results with an equity curve](docs/screenshots/backtest.png) |
+
+| Watchlist scan                                          | Know your ticker                                      |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| ![Watchlist scan of seven tickers sorted by score](docs/screenshots/watchlist.png) | ![Risk profile for SOXL](docs/screenshots/know-your-ticker.png) |
 
 ## Running it
 
@@ -67,6 +79,25 @@ The app is long-only: SELL means exit a position or don't buy, never short. All 
 
 The intraday backtest buys on a BUY verdict and exits on a 1.5x ATR stop, a SELL verdict or the end of the day, whichever comes first. The long-term backtest holds while the price is above the 200-day average, over 5 years of daily data.
 
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+76 tests run in a couple of seconds on generated price data, so they need no internet connection or API keys. They cover:
+
+- Indicator math (RSI, MACD, Bollinger Bands, ATR, VWAP) against values worked out by hand
+- Long-term verdicts in uptrends, downtrends and with too little history
+- Every intraday rule: score thresholds, fresh crossovers, WAIT on choppy or conflicting signals, the daily-trend filter, and stop and target levels
+- Position sizing and the daily loss log
+- The verdict-change log, including the 60-day cleanup
+- Backtest statistics and both backtests end to end
+- The plain-English session summary and outlook
+
+GitHub Actions runs the tests on every push.
+
 ## Project structure
 
 The analysis modules have no UI code, so the same logic runs in the app, the backtests and the background logger.
@@ -84,6 +115,8 @@ The analysis modules have no UI code, so the same logic runs in the app, the bac
 | `narrator.py`    | Plain-English session summary, outlook and live commentary     |
 | `history.py`     | Log of verdict changes                                         |
 | `watch.py`       | Background logger that runs without Streamlit                  |
+| `tests/`         | Tests for the indicators, verdicts, risk, history, backtests and narrator |
+| `docs/screenshots/` | Screenshots used in this README                             |
 
 ## Limitations
 

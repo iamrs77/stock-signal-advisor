@@ -1,0 +1,17 @@
+# Project Streamlit settings — keeps launches quiet and consistent.
+[browser]
+gatherUsageStats = false
+
+[server]
+port = 8501
+headless = false   # open the browser automatically on launch
+
+[theme]
+base = "light"
+primaryColor = "#2563EB"
+backgroundColor = "#F6F8FB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1A2233"
+baseRadius = "0.75rem"
+borderColor = "#E5E9F0"
+font = "sans serif"

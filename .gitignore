@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# API keys. Copy .streamlit/secrets.toml.example to .streamlit/secrets.toml.
+.streamlit/secrets.toml
+
+# Local data the app writes while it runs
+verdict_history.json
+daily_risk.json
+
+# Editors and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

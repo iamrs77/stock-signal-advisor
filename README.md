@@ -2,6 +2,8 @@
 
 [![Tests](https://github.com/iamrs77/stock-signal-advisor/actions/workflows/tests.yml/badge.svg)](https://github.com/iamrs77/stock-signal-advisor/actions/workflows/tests.yml)
 
+**Live demo:** [stock-signal-advisor.streamlit.app](https://stock-signal-advisor.streamlit.app/) (free hosting, so it may take about 30 seconds to wake up)
+
 A Streamlit app that gives a BUY, SELL or HOLD verdict for a stock and explains the reasons behind it. It has an intraday view for day trading and a long-term view based on daily prices, uses real-time market data where it's available, and can backtest its own rules.
 
 **Not financial advice.** The verdicts come from fixed rules. They're a second opinion, not a prediction.
